@@ -1,0 +1,17 @@
+{
+  "name": "com.clpsplug.i18ntools",
+  "version": "1.0.0",
+  "displayName": "ClpsPLUG's Internationalization Tools",
+  "description": "Internationalization tools and components used to do i18n stuff for ECP games.",
+  "author": {
+    "name": "Collapsed Plug",
+    "email": "hsp.tosh.5200113@gmail.com",
+    "url": "https://clpsplug.com"
+  },
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.8",
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "license": "MIT",
+  "keywords": ["i18n"]
+}

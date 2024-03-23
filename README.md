@@ -17,13 +17,47 @@ https://github.com/Clpsplug/I18nTools.git
 ## How to use
 
 > **Table of contents**
-> 1. [Define the "strings"](#toc1)
-> 2. [Use the strings - the basic way](#toc2)
-> 3. [Use the strings - the **easy** way!](#toc3)
-> 4. [Change language](#toc4)
+> 1. [Define the supported languages](#toc1)
+> 2. [Define the "strings"](#toc2)
+> 3. [Use the strings - the basic way](#toc3)
+> 4. [Use the strings - the **easy** way!](#toc4)
+> 5. [Change language](#toc5)
 
-### 1. Define the "strings"
+### 1. Define the supported languages
 <a id="toc1"></a>
+
+This plugin looks for a JSON file at the following path:
+
+`Assets/Resources/I18n/SupportedLanguages.json`
+
+And the content of the file should look like this:
+
+```json5
+{
+  // NOTE: This example uses JSON5, but **an actual JSON CANNOT CONTAIN COMMENTS!**
+  // Start with the "langs" key
+  "langs": [
+    {
+      "id": 0, // ID to refer to this language
+      "code": "ja", // Code to be used in the string definition
+      "display": "日本語" // User-friendly text
+    },
+    {
+      "id": 1,
+      "code": "en",
+      "display": "English"
+    }
+  ]
+}
+```
+
+The `code` value will be used as a key determine which string is for which language.
+It can be those ISO 639-1 style codes like above, or you can even use locale codes like `ja_JP`.
+
+You may add as many languages as you want - just make sure the `id` and `code` key do not collide.
+
+### 2. Define the "strings"
+<a id="toc2"></a>
 
 The i18n strings are provided through the following path by default:
 
@@ -37,13 +71,11 @@ the strings are defined in the following JSON format:
 // NOTE: This example uses JSON5, but **an actual JSON CANNOT CONTAIN COMMENTS!**
 // The root element is always an array.
 [
-  // A regular string. Regular strings always have 'key', 'ja' and 'en' key.
+  // A regular string. Regular strings always have 'key', and codes from the supported languages definition as the keys.
   {
     "key": "test",
-    "ja": "テスト",
-    // Japanese text
-    "en": "Test"
-    // English text
+    "ja": "テスト", // Japanese text, note that we use `ja` as key as we specified in the previous section.
+    "en": "Test" // English text
   },
   {
     // Using "_long" variant enables you to write long text without having to add newlines.
@@ -76,8 +108,8 @@ the strings are defined in the following JSON format:
 ]
 ```
 
-### 2. Use the strings - the basic way
-<a id="toc2"></a>
+### 3. Use the strings - the basic way
+<a id="toc3"></a>
 
 There are two ways to use the string - from the code, or as a static label in the scene.
 
@@ -121,9 +153,9 @@ the corresponding TextMeshPro component.
 
 ![component screenshot](ManualImages~/component.png)
 
-### 3. Use the strings - the **easy** way!
+### 4. Use the strings - the **easy** way!
 
-<a id="toc3"></a>
+<a id="toc4"></a>
 
 Specifying keys is tedious. That's why we have editor tools!
 
@@ -230,20 +262,17 @@ This value then can be used to paste into
 the `I18nStaticLabel` component or the `I18nStaticLabelUGUI` component.
 
 
-### 4. Change language
-<a id="toc4"></a>
+### 5. Change language
+<a id="toc5"></a>
 
-The supported language is currently an enum called `SupportedLanguage`.
-
-> [!NOTE]  
-> Currently, it has Japanese and English only, but a feature to add/remove supported languages is planned.
+To change the language, we need to use the `id` value from the supported languages definition (see [Section 1.](#toc1)).
 
 Once you have implemented the language selection screen, those are the methods you want to run.
 
 ```csharp
 using Clpsplug.I18n.Runtime;
 
-    SupportedLanguage lang = SupportedLanguage.English; // language choice
+    int lang = 0 /* language choice */
     
     I18nStringRepository.GetInstance().ChangeLanguage(lang);
     I18nTool.NotifyLanguageSwitchToStaticLabels();
@@ -258,5 +287,3 @@ so that their text turns into the string of the specified language.
 # TODO
 
 * More documentation
-* Support other languages
-  * Add ability to add/remove languages from user-side

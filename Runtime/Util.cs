@@ -12,6 +12,9 @@ using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
+    /// <summary>
+    /// Gets the supported language configuration from the config file.
+    /// </summary>
     public class SupportedLanguageLoader
     {
         private static SupportedLanguageLoader _self;
@@ -70,6 +73,10 @@ namespace Clpsplug.I18n.Runtime
         public ISupportedLanguage SupportedLanguage { get; }
     }
 
+    /// <summary>
+    /// Parser of the I18n string resource.
+    /// Usually is not of much use user-side.
+    /// </summary>
     public class I18nStringParser
     {
         private readonly string _inputPath;
@@ -79,6 +86,12 @@ namespace Clpsplug.I18n.Runtime
             _inputPath = inputPath;
         }
 
+        /// <summary>
+        /// Perform a parse and get the string data.
+        /// </summary>
+        /// <param name="withSupportedLanguage"></param>
+        /// <returns></returns>
+        /// <exception cref="StringNotFoundException"></exception>
         public List<LocalizedStringData> Parse(ISupportedLanguage withSupportedLanguage)
         {
             var categoryTextAsset = Resources.Load<TextAsset>(_inputPath);

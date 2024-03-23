@@ -9,23 +9,47 @@ using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
+    /// <summary>
+    /// Supported language configuration interface
+    /// </summary>
     public interface ISupportedLanguage
     {
         /// <summary>
-        /// Return language ID as integer as key and language code as value.
+        /// Get all the 'code' keys from supported languages.
         /// </summary>
         /// <returns></returns>
         IReadOnlyDictionary<int, string> GetLanguageCodes();
 
+        /// <summary>
+        /// Gets the dictionary with code key and displayable (user-friendly) string.
+        /// </summary>
+        /// <returns></returns>
         IReadOnlyDictionary<string, string> GetCodeDisplayPairs();
 
+        /// <summary>
+        /// Gets the code associated with language ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         string GetCodeFromId(int id);
 
+        /// <summary>
+        /// Gets displayable (user-friendly) string from language ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         string GetDisplayFromId(int id);
 
+        /// <summary>
+        /// How many supported languages are there?
+        /// </summary>
+        /// <returns></returns>
         int Count();
     }
 
+    /// <summary>
+    /// Supported language configuration
+    /// </summary>
     [Serializable]
     public class SupportedLanguage : ISupportedLanguage
     {
@@ -41,26 +65,31 @@ namespace Clpsplug.I18n.Runtime
             _display = langs.ToDictionary(l => l.code, l => l.display);
         }
 
+        /// <inheritdoc cref="ISupportedLanguage.GetLanguageCodes"/>
         public IReadOnlyDictionary<int, string> GetLanguageCodes()
         {
             return _langDict;
         }
 
+        /// <inheritdoc cref="ISupportedLanguage.GetCodeDisplayPairs"/>
         public IReadOnlyDictionary<string, string> GetCodeDisplayPairs()
         {
             return _display;
         }
 
+        /// <inheritdoc cref="ISupportedLanguage.GetCodeFromId"/>
         public string GetCodeFromId(int id)
         {
             return _langs[id];
         }
 
+        /// <inheritdoc cref="ISupportedLanguage.GetDisplayFromId"/>
         public string GetDisplayFromId(int id)
         {
             return _display[_langDict[id]];
         }
 
+        /// <inheritdoc cref="ISupportedLanguage.Count"/>
         public int Count() => _langs.Count;
 
         public static SupportedLanguage DefaultSupportedLanguage()
@@ -74,11 +103,25 @@ namespace Clpsplug.I18n.Runtime
             );
         }
 
+        /// <summary>
+        /// Supported language entry
+        /// </summary>
         [Serializable]
         public class SupportedLanguageInfo
         {
+            /// <summary>
+            /// Language ID, must be unique
+            /// </summary>
             public int id;
+
+            /// <summary>
+            /// Displayable (user-friendly) language name
+            /// </summary>
             public string display;
+
+            /// <summary>
+            /// Key to use in string resource files
+            /// </summary>
             public string code;
         }
     }

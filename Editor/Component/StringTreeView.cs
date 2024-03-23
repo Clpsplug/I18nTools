@@ -12,6 +12,7 @@ namespace Clpsplug.I18n.Editor.Component
     internal class StringTreeView : TreeView
     {
         private List<LocalizedStringData> _data = new List<LocalizedStringData>();
+        private static ISupportedLanguage _sl;
 
         public StringTreeView(TreeViewState state) : base(state, CreateHeader())
         {
@@ -32,11 +33,12 @@ namespace Clpsplug.I18n.Editor.Component
                 },
             };
             var columns = new List<MultiColumnHeaderState.Column>(baseColumn);
+            _sl ??= new SupportedLanguageLoader().LoadSupportedLanguage();
             columns.AddRange(
-                EnumTool.Enumerate<SupportedLanguage>()[..(int)SupportedLanguage.Max].ToArray()
+                _sl.GetCodeDisplayPairs()
                     .Select(l => new MultiColumnHeaderState.Column
                         {
-                            headerContent = new GUIContent(l.AsDisplayedLanguage()),
+                            headerContent = new GUIContent(l.Value),
                         }
                     )
             );
@@ -49,6 +51,7 @@ namespace Clpsplug.I18n.Editor.Component
         public void LoadData(List<LocalizedStringData> data)
         {
             _data = data;
+            _sl = new SupportedLanguageLoader().LoadSupportedLanguage();
         }
 
         public string GetFullKey(int itemId)
@@ -66,7 +69,7 @@ namespace Clpsplug.I18n.Editor.Component
             var id = 0;
             var root = new TreeViewItem { id = ++id, depth = -1, displayName = "Root" };
             var items = new List<TreeViewItem>();
-            var top = new TreeViewItem { id = ++id, depth = 0, displayName = "I18n string resources"};
+            var top = new TreeViewItem { id = ++id, depth = 0, displayName = "I18n string resources" };
             items.Add(top);
             items.AddRange(RecursiveAddView(root, _data, "", 0, ref id));
             SetupParentsAndChildrenFromDepths(root, items);
@@ -112,7 +115,7 @@ namespace Clpsplug.I18n.Editor.Component
                     {
                         var rect = args.GetCellRect(i);
                         var columnIndex = args.GetColumn(i);
-                        
+
                         // Intentionally using columnIndex here,
                         // because columns can be hidden.
                         switch (columnIndex)
@@ -126,9 +129,10 @@ namespace Clpsplug.I18n.Editor.Component
                                 EditorGUI.SelectableLabel(rect, item.fullKey);
                                 break;
                             default:
-                                var l = (SupportedLanguage)(columnIndex - 2);
+                                var l = columnIndex - 2;
                                 EditorGUI.LabelField(rect,
-                                    item.localizedStrings.GetValueOrDefault(l.AsKey(), "").Replace("\n", " "));
+                                    item.localizedStrings.GetValueOrDefault(_sl.GetCodeFromId(l), "")
+                                        .Replace("\n", " "));
                                 break;
                         }
                     }

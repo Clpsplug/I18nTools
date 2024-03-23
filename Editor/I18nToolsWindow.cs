@@ -190,6 +190,7 @@ namespace Clpsplug.I18n.Editor
             {
                 _isGeneratingChars = true;
                 _usedChars = "";
+                var sl = new SupportedLanguageLoader().LoadSupportedLanguage();
                 EditorPrefs.SetString(EditorPrefKey, JsonUtility.ToJson(ToSavedState()));
                 var generator = new I18nGenerator(_stringPath, _namespace, _outputLocation, IndentIncrement);
                 try
@@ -206,10 +207,10 @@ namespace Clpsplug.I18n.Editor
                         r = r.Where(c => !numeric.Contains(c)).ToHashSet();
                     }
 
-                    foreach (var sl in EnumTool.Enumerate<SupportedLanguage>()[..(int)SupportedLanguage.Max])
+                    for (var i = 0; i < sl.Count(); i++)
                     {
                         // Required for displaying supported languages
-                        builder.Append(sl.AsDisplayedLanguage());
+                        builder.Append(sl.GetDisplayFromId(i));
                     }
 
                     builder.Append(string.Concat(r));
@@ -288,11 +289,6 @@ namespace Clpsplug.I18n.Editor
 
             _isOutputPathCs = path.EndsWith(".cs");
         }
-    }
-
-    public class StringNotFoundException : Exception
-    {
-        public override string Message => "Specified string was not found as a TextAsset.";
     }
 
     [Serializable]

@@ -29,17 +29,13 @@ namespace Clpsplug.I18n.Editor.Generator
 
         public void OnGenerate()
         {
-            var textAsset = Resources.Load<TextAsset>(_stringPath);
-
-            if (textAsset == null)
-            {
-                throw new StringNotFoundException();
-            }
-
             List<LocalizedStringData> data;
             try
             {
-                data = JsonConvert.DeserializeObject<List<LocalizedStringData>>(textAsset.text);
+                var supportedLanguageLoader = new SupportedLanguageLoader();
+                var sl = supportedLanguageLoader.LoadSupportedLanguage();
+                var parser = new I18nStringParser(_stringPath);
+                data = parser.Parse(sl);
             }
             catch (ArgumentNullException ane)
             {

@@ -133,16 +133,12 @@ namespace Clpsplug.I18n.Editor
 
         private void OnLoadAsset()
         {
-            var textAsset = Resources.Load<TextAsset>(_stringPath);
-            if (textAsset == null)
-            {
-                throw new StringNotFoundException();
-            }
-
-
             try
             {
-                _data = JsonConvert.DeserializeObject<List<LocalizedStringData>>(textAsset.text);
+                var loader = new SupportedLanguageLoader();
+                var sl = loader.LoadSupportedLanguage();
+                var parser = new I18nStringParser(_stringPath);
+                _data = parser.Parse(sl);
             }
             catch (ArgumentNullException ane)
             {

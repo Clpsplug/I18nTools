@@ -1,28 +1,91 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using Newtonsoft.Json;
+using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace Clpsplug.I18n.Runtime
 {
-    public enum SupportedLanguage
+    public interface ISupportedLanguage
     {
-        Japanese,
-        English,
-        Max,
+        /// <summary>
+        /// Return language ID as integer as key and language code as value.
+        /// </summary>
+        /// <returns></returns>
+        IReadOnlyDictionary<int, string> GetLanguageCodes();
+
+        IReadOnlyDictionary<string, string> GetCodeDisplayPairs();
+
+        string GetCodeFromId(int id);
+
+        string GetDisplayFromId(int id);
+
+        int Count();
+    }
+
+    [Serializable]
+    public class SupportedLanguage : ISupportedLanguage
+    {
+        private readonly List<string> _langs;
+        private readonly Dictionary<int, string> _langDict;
+        private readonly Dictionary<string, string> _display;
+
+        [JsonConstructor]
+        public SupportedLanguage(List<SupportedLanguageInfo> langs)
+        {
+            _langs = langs.Select(l => l.code).ToList();
+            _langDict = langs.ToDictionary(l => l.id, l => l.code);
+            _display = langs.ToDictionary(l => l.code, l => l.display);
+        }
+
+        public IReadOnlyDictionary<int, string> GetLanguageCodes()
+        {
+            return _langDict;
+        }
+
+        public IReadOnlyDictionary<string, string> GetCodeDisplayPairs()
+        {
+            return _display;
+        }
+
+        public string GetCodeFromId(int id)
+        {
+            return _langs[id];
+        }
+
+        public string GetDisplayFromId(int id)
+        {
+            return _display[_langDict[id]];
+        }
+
+        public int Count() => _langs.Count;
+        
+        public static SupportedLanguage DefaultSupportedLanguage()
+        {
+            return new SupportedLanguage(
+                new List<SupportedLanguageInfo>
+                {
+                    new SupportedLanguageInfo { id = 0, code = "ja", display = "日本語" },
+                    new SupportedLanguageInfo { id = 1, code = "en", display = "English" },
+                }
+            );
+        }
+
+        [Serializable]
+        public class SupportedLanguageInfo
+        {
+            public int id;
+            public string display;
+            public string code;
+        }
     }
 
     /// <summary>
     /// Localized String. To be used in the code.
     /// </summary>
-    [Serializable]
     public class I18nString
     {
         /// <summary>
@@ -72,7 +135,9 @@ namespace Clpsplug.I18n.Runtime
         /// <returns></returns>
         public string GetString(Dictionary<string, object> valueDict = null)
         {
-            return key == "" ? "No localization key specified!!!!!" : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(key, valueDict);
+            return key == ""
+                ? "No localization key specified!!!!!"
+                : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(key, valueDict);
         }
 
         public override string ToString()
@@ -98,12 +163,14 @@ namespace Clpsplug.I18n.Runtime
     {
         private static I18nStringRepository _self;
 
-        private SupportedLanguage _currentLanguage;
+        private int _currentLanguageId;
+
+        public static ISupportedLanguage SupportedLanguage { get; private set; }
 
         private readonly List<LocalizedStringData> _data;
 
         public static string Path { get; set; } = "strings";
-        
+
         private static readonly object InitLock = new object();
 
         /// <summary>
@@ -144,22 +211,15 @@ namespace Clpsplug.I18n.Runtime
         /// <exception cref="InvalidDataException">When deserialization somehow breaks</exception>
         private I18nStringRepository()
         {
-            _currentLanguage = SupportedLanguage.English;
-
-            var categoryTextAsset = Resources.Load<TextAsset>(Path);
-            if (categoryTextAsset == null)
-            {
-                throw new Exception(
-                    "Failed to load strings (strings.json,) this shouldn't happen");
-            }
-
-            var strings = JsonConvert.DeserializeObject<List<LocalizedStringData>>(categoryTextAsset.text);
-            _data = strings;
+            var supportedLanguageLoader = new SupportedLanguageLoader();
+            SupportedLanguage = supportedLanguageLoader.LoadSupportedLanguage();
+            var parser = new I18nStringParser(Path);
+            _data = parser.Parse(SupportedLanguage);
         }
 
-        public void ChangeLanguage(SupportedLanguage l)
+        public void ChangeLanguage(int id)
         {
-            _currentLanguage = l;
+            _currentLanguageId = id;
         }
 
         /// <summary>
@@ -179,14 +239,10 @@ namespace Clpsplug.I18n.Runtime
                 var rootLS = _data.First(ls => ls.Key == explodedKey.First());
                 var stringData = FindStringRecursive(rootLS, explodedKey.Skip(1).ToArray());
 
-                return _currentLanguage switch
-                {
-                    SupportedLanguage.Japanese =>
-                        PerformRequiredReplacement(stringData.LocalizationStrings["ja"], valueDict),
-                    SupportedLanguage.English => PerformRequiredReplacement(stringData.LocalizationStrings["en"],
-                        valueDict),
-                    _ => PerformRequiredReplacement(stringData.GetSubstituteString(), valueDict),
-                };
+                return PerformRequiredReplacement(
+                    stringData.LocalizationStrings[SupportedLanguage.GetLanguageCodes()[_currentLanguageId]],
+                    valueDict
+                );
             }
             catch (InvalidOperationException)
             {
@@ -229,7 +285,8 @@ namespace Clpsplug.I18n.Runtime
         /// </param>
         /// <exception cref="InvalidOperationException">If no element with given <see cref="keyArray"/> exists.</exception>
         /// <returns></returns>
-        private static LocalizedStringData FindStringRecursive(LocalizedStringData parent, IReadOnlyCollection<string> keyArray)
+        private static LocalizedStringData FindStringRecursive(LocalizedStringData parent,
+            IReadOnlyCollection<string> keyArray)
         {
             return keyArray.Count switch
             {
@@ -248,129 +305,24 @@ namespace Clpsplug.I18n.Runtime
     /// <summary>
     /// Internal data for localized strings. Not to be used directly.
     /// </summary>
-    [Serializable]
     public class LocalizedStringData
     {
         /// <summary>
         /// String "Key," which is used to refer to this localized string.
         /// </summary>
-        public string Key { get; }
+        public string Key { get; internal set; }
 
         /// <summary>
         /// Dictionary of text for each language
         /// </summary>
         /// <returns></returns>
-        public Dictionary<string, string> LocalizationStrings { get; }
+        public Dictionary<string, string> LocalizationStrings { get; internal set; }
 
         /// <summary>
         /// To refer to the children <see cref="LocalizedStringData"/> contained here,
         /// concatenate (or implode) the keys from parent to child with a period.
         /// </summary>
-        public List<LocalizedStringData> Children { get; }
-
-        /// <summary>
-        /// Used to deserialize from JSON files.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="ja">If non-null, <see cref="en"/> OR <see cref="en_long"/> must also be non-null. This attribute will have precedence over <see cref="ja_long"/>.</param>
-        /// <param name="ja_long">If non-null, <see cref="en"/> OR <see cref="en_long"/> must also be non-null</param>
-        /// <param name="en">If non-null, <see cref="ja"/> OR <see cref="ja_long"/> must also be non-null. This attribute will have precedence over <see cref="en_long"/>.</param>
-        /// <param name="en_long">If non-null, <see cref="ja"/> OR <see cref="ja_long"/> must also be non-null</param>
-        /// <param name="strings">children <see cref="LocalizedStringData"/> array</param>
-        /// <param name="exclude_newline">If true, newlines (\n) will not be appended for each element in _long key. If _long key is not used, this is simply no-op.</param>
-        /// <exception cref="InvalidDataException">If malformed because:
-        /// 1. <see cref="key"/> is null, 
-        /// 2. <see cref="ja"/> and <see cref="en"/> aren't paired, or
-        /// 3. none of <see cref="ja"/>, <see cref="en"/>, <see cref="strings"/> are present.
-        /// </exception>
-        /// <remarks>
-        /// The "_long" variant of each language is for longer strings of text.
-        /// Unlike the non-"_long" version, it can split up a string into an array of string within the JSON file
-        /// for better readability of the l10n JSON file.
-        /// </remarks>
-        [JsonConstructor, Preserve]
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        public LocalizedStringData(
-            string key,
-            string ja,
-            List<string> ja_long,
-            string en,
-            List<string> en_long,
-            List<LocalizedStringData> strings,
-            bool exclude_newline = false
-        )
-        {
-            Key = key;
-
-            if (Key == null)
-            {
-                throw new InvalidDataException(
-                    "Key-less string is not allowed",
-                    new ArgumentNullException(nameof(Key))
-                );
-            }
-
-            if (
-                Regex.IsMatch(
-                    Key.Replace('-', '_').Replace('.', '_'),
-                    @"[^\p{L}\p{N}_]")
-            )
-            {
-                throw new InvalidDataException(
-                    $"'{Key}' is not a valid key. A key cannot have non-alphanumeric characters except for -(dash), .(period), and _(underscore).");
-            }
-
-            var textInfo = new CultureInfo("en-US", false).TextInfo;
-            if (Key == textInfo.ToTitleCase(Key))
-            {
-                Debug.LogWarning(
-                    $"A 'TitleCase' key ({Key}) was found. This causes trouble with i18n key class generation. 'camelCase' is recommended.");
-            }
-
-            var localizationStrings = new Dictionary<string, string>();
-            var localizationSourceSet =
-                new List<(string localeKey, string oneLinerSource, List<string> multiLinerSource)>
-                {
-                    ("ja", ja, ja_long),
-                    ("en", en, en_long),
-                };
-            foreach (var lss in localizationSourceSet)
-            {
-                string str;
-                if (lss.oneLinerSource != null)
-                {
-                    str = lss.oneLinerSource;
-                }
-                else if (lss.multiLinerSource is { Count: > 0 })
-                {
-                    str = lss.multiLinerSource.Aggregate((c, n) => c + (!exclude_newline ? "\n" : "") + n);
-                }
-                else
-                {
-                    str = null;
-                }
-
-                if (str != null)
-                {
-                    localizationStrings.TryAdd(lss.localeKey, str);
-                }
-            }
-
-            if (localizationSourceSet.Any(lss => !localizationStrings.ContainsKey(lss.localeKey)) &&
-                strings == null)
-            {
-                throw new InvalidDataException(
-                    $"Localized string for key {key} seems to be malformed",
-                    new ArgumentNullException(
-                        $"{nameof(strings)}, {nameof(ja)}, {nameof(en)}",
-                        $"object must have 'strings,' OR both of 'ja' and 'en.' {key} seems to be missing those."
-                    )
-                );
-            }
-
-            LocalizationStrings = localizationStrings;
-            Children = strings;
-        }
+        public List<LocalizedStringData> Children { get; internal set; }
 
         /// <summary>
         /// Return 'substitute' language when unsupported string comes in for whatever reason.
@@ -379,7 +331,9 @@ namespace Clpsplug.I18n.Runtime
         /// <returns></returns>
         public string GetSubstituteString()
         {
-            return LocalizationStrings.TryGetValue("en", out var text) ? text : $"{Key} not localized, attempt to get substitute string also failed!";
+            return LocalizationStrings.TryGetValue("en", out var text)
+                ? text
+                : $"{Key} not localized, attempt to get substitute string also failed!";
         }
     }
 
@@ -407,31 +361,6 @@ namespace Clpsplug.I18n.Runtime
                 valueDict
                     .OrderBy(x => keyToInt[x.Key])
                     .Select(x => x.Value).ToArray());
-        }
-    }
-
-    public static class SupportedLanguageExtension
-    {
-        public static string AsKey(this SupportedLanguage l)
-        {
-            return l switch
-            {
-                SupportedLanguage.Japanese => "ja",
-                SupportedLanguage.English => "en",
-                SupportedLanguage.Max => throw new ArgumentException(),
-                _ => throw new ArgumentOutOfRangeException(nameof(l), $"Got {(int)l} as language key but no such key exists"),
-            };
-        }
-
-        public static string AsDisplayedLanguage(this SupportedLanguage l)
-        {
-            return l switch
-            {
-                SupportedLanguage.Japanese => "日本語",
-                SupportedLanguage.English => "English",
-                SupportedLanguage.Max => throw new ArgumentException(),
-                _ => throw new ArgumentOutOfRangeException(nameof(l), $"Got {(int)l} as language key but no such key exists"),
-            };
         }
     }
 }

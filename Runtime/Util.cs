@@ -40,6 +40,15 @@ namespace Clpsplug.I18n.Runtime
             return _self;
         }
 
+        /// <summary>
+        /// Required method when 'skipping domain load' is enabled.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void InitOnPlayMode()
+        {
+            _self = null;
+        }
+
         private SupportedLanguageLoader()
         {
             var supportedLanguageTextAsset = Resources.Load<TextAsset>("I18n/SupportedLanguages");

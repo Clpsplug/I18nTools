@@ -177,21 +177,14 @@ namespace Clpsplug.I18n.Editor.Generator
             return new string(' ', count);
         }
 
-        public HashSet<char> OnGetChars()
+        public IEnumerable<char> OnGetChars()
         {
-            var textAsset = Resources.Load<TextAsset>(_stringPath);
-
-            if (textAsset == null)
-            {
-                throw new StringNotFoundException();
-            }
-
-            var data = JsonConvert.DeserializeObject<List<LocalizedStringData>>(textAsset.text);
-
+            var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
+            var data = new I18nStringParser(_stringPath).Parse(sl);
             return RecursiveFindChars(data);
         }
 
-        private static HashSet<char> RecursiveFindChars(List<LocalizedStringData> data)
+        private static IEnumerable<char> RecursiveFindChars(List<LocalizedStringData> data)
         {
             var hashset = new HashSet<char>();
             foreach (var entry in data)

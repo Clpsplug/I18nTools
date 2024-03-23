@@ -32,8 +32,7 @@ namespace Clpsplug.I18n.Editor.Generator
             List<LocalizedStringData> data;
             try
             {
-                var supportedLanguageLoader = new SupportedLanguageLoader();
-                var sl = supportedLanguageLoader.LoadSupportedLanguage();
+                var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
                 var parser = new I18nStringParser(_stringPath);
                 data = parser.Parse(sl);
             }

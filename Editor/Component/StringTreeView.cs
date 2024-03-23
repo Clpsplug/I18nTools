@@ -33,7 +33,7 @@ namespace Clpsplug.I18n.Editor.Component
                 },
             };
             var columns = new List<MultiColumnHeaderState.Column>(baseColumn);
-            _sl ??= new SupportedLanguageLoader().LoadSupportedLanguage();
+            _sl ??= SupportedLanguageLoader.GetInstance().SupportedLanguage;
             columns.AddRange(
                 _sl.GetCodeDisplayPairs()
                     .Select(l => new MultiColumnHeaderState.Column
@@ -51,7 +51,7 @@ namespace Clpsplug.I18n.Editor.Component
         public void LoadData(List<LocalizedStringData> data)
         {
             _data = data;
-            _sl = new SupportedLanguageLoader().LoadSupportedLanguage();
+            _sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
         }
 
         public string GetFullKey(int itemId)

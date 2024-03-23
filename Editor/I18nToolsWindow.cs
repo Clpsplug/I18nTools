@@ -190,7 +190,7 @@ namespace Clpsplug.I18n.Editor
             {
                 _isGeneratingChars = true;
                 _usedChars = "";
-                var sl = new SupportedLanguageLoader().LoadSupportedLanguage();
+                var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
                 EditorPrefs.SetString(EditorPrefKey, JsonUtility.ToJson(ToSavedState()));
                 var generator = new I18nGenerator(_stringPath, _namespace, _outputLocation, IndentIncrement);
                 try

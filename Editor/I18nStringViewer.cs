@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using Clpsplug.I18n.Editor.Component;
 using Clpsplug.I18n.Runtime;
-using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -135,8 +134,7 @@ namespace Clpsplug.I18n.Editor
         {
             try
             {
-                var loader = new SupportedLanguageLoader();
-                var sl = loader.LoadSupportedLanguage();
+                var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
                 var parser = new I18nStringParser(_stringPath);
                 _data = parser.Parse(sl);
             }

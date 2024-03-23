@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -13,23 +14,51 @@ namespace Clpsplug.I18n.Runtime
 {
     public class SupportedLanguageLoader
     {
-        private ISupportedLanguage supportedLanguage;
+        private static SupportedLanguageLoader _self;
 
-        public ISupportedLanguage LoadSupportedLanguage()
+        private static readonly object InitLock = new object();
+
+        /// <summary>
+        /// Retrieves the current instance of this loader.
+        /// </summary>
+        /// <returns></returns>
+        [SuppressMessage("ReSharper", "ConvertIfStatementToNullCoalescingAssignment")]
+        [SuppressMessage("ReSharper", "InvertIf")]
+        public static SupportedLanguageLoader GetInstance()
+        {
+            if (_self == null)
+            {
+                lock (InitLock)
+                {
+                    if (_self == null)
+                    {
+                        _self = new SupportedLanguageLoader();
+                    }
+                }
+            }
+
+            return _self;
+        }
+
+        private SupportedLanguageLoader()
         {
             var supportedLanguageTextAsset = Resources.Load<TextAsset>("I18n/SupportedLanguages");
             // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
             if (supportedLanguageTextAsset == null)
             {
-                supportedLanguage = SupportedLanguage.DefaultSupportedLanguage();
+                SupportedLanguage = Runtime.SupportedLanguage.DefaultSupportedLanguage();
             }
             else
             {
-                supportedLanguage = JsonConvert.DeserializeObject<SupportedLanguage>(supportedLanguageTextAsset.text);
+                SupportedLanguage =
+                    JsonConvert.DeserializeObject<SupportedLanguage>(supportedLanguageTextAsset.text);
             }
-
-            return supportedLanguage;
         }
+
+        /// <summary>
+        /// Get supported language configuration
+        /// </summary>
+        public ISupportedLanguage SupportedLanguage { get; }
     }
 
     public class I18nStringParser

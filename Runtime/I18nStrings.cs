@@ -62,7 +62,7 @@ namespace Clpsplug.I18n.Runtime
         }
 
         public int Count() => _langs.Count;
-        
+
         public static SupportedLanguage DefaultSupportedLanguage()
         {
             return new SupportedLanguage(
@@ -211,8 +211,7 @@ namespace Clpsplug.I18n.Runtime
         /// <exception cref="InvalidDataException">When deserialization somehow breaks</exception>
         private I18nStringRepository()
         {
-            var supportedLanguageLoader = new SupportedLanguageLoader();
-            SupportedLanguage = supportedLanguageLoader.LoadSupportedLanguage();
+            SupportedLanguage = SupportedLanguageLoader.GetInstance().SupportedLanguage;
             var parser = new I18nStringParser(Path);
             _data = parser.Parse(SupportedLanguage);
         }

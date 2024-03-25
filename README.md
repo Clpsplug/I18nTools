@@ -2,8 +2,6 @@
 
 This package enables internationalization of strings in Unity.
 
-Currently supports Japanese and English.
-
 ## Installation
 
 Use UPM - select "Add package from Git URL" and paste the following:

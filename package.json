@@ -1,6 +1,6 @@
 {
   "name": "com.clpsplug.i18ntools",
-  "version": "1.1.0",
+  "version": "1.1.3",
   "displayName": "ClpsPLUG's Internationalization Tools",
   "description": "Internationalization tools and components used to do i18n stuff for ECP games.",
   "author": {
@@ -13,5 +13,7 @@
     "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
   "license": "MIT",
-  "keywords": ["i18n"]
+  "keywords": [
+    "i18n"
+  ]
 }

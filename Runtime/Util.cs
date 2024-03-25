@@ -4,10 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using DG.DemiEditor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UnityEditor.iOS;
 using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
@@ -84,6 +86,21 @@ namespace Clpsplug.I18n.Runtime
         public I18nStringParser(string inputPath)
         {
             _inputPath = inputPath;
+        }
+
+        public string GetHash()
+        {
+            var asset = Resources.Load<TextAsset>(_inputPath);
+            if (asset == null)
+            {
+                throw new StringNotFoundException();
+            }
+
+            // Yes I know MD5 is weak but we're not dealing with cryptography here.
+            var md5 = MD5.Create();
+            var bs = md5.ComputeHash(asset.bytes);
+            md5.Clear();
+            return BitConverter.ToString(bs).ToLower().Replace("-", "");
         }
 
         /// <summary>

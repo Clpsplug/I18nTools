@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Clpsplug.I18n.Editor.Generator;
 using Clpsplug.I18n.Runtime;
 using UnityEditor;
@@ -27,6 +28,8 @@ namespace Clpsplug.I18n.Editor
         private const int IndentIncrement = 4;
 
         private const string EditorPrefKey = "com.expoding-cable.i18n-window";
+
+        private readonly Regex regex = new Regex("// String resource file hash: ([0-9a-f]+)");
 
         [MenuItem("Tools/ClpsPLUG/I18n/I18n String Tools")]
         private static void Open(MenuCommand menuCommand)
@@ -118,6 +121,22 @@ namespace Clpsplug.I18n.Editor
                     "The output path exists. Will overwrite the existing code. Check if this is intended.",
                     MessageType.Info
                 );
+                if (_isStringPathValid)
+                {
+                    // Read file and compare hash
+                    var hash = new I18nStringParser(_stringPath).GetHash();
+                    using var sr = new StreamReader(Path.Join(Application.dataPath, _outputLocation));
+                    var text = sr.ReadToEnd();
+                    var match = regex.Match(text);
+                    if (!match.Success || match.Groups[1].Value != hash)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "There appears to be a modification to the string resource. " +
+                            "Update your key file so that you can refer to keys from the code.",
+                            MessageType.Warning
+                        );
+                    }
+                }
             }
             else
             {

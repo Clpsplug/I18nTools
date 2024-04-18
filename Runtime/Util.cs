@@ -6,10 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using DG.DemiEditor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UnityEditor.iOS;
 using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
@@ -136,7 +134,7 @@ namespace Clpsplug.I18n.Runtime
                 throw new InvalidOperationException("Key-less string was found...");
             }
 
-            if (key.IsNullOrEmpty() ||
+            if (string.IsNullOrEmpty(key) ||
                 Regex.IsMatch(
                     key!.Replace('-', '_').Replace('.', '_'),
                     @"[^\p{L}\p{N}_]")
@@ -189,11 +187,11 @@ namespace Clpsplug.I18n.Runtime
 
                     return "";
                 });
-            if (langData.All(kv => kv.Value.IsNullOrEmpty()))
+            if (langData.All(kv => string.IsNullOrEmpty(kv.Value)))
             {
                 langData = new Dictionary<string, string>();
             }
-            else if (langData.Any(kv => kv.Value.IsNullOrEmpty()))
+            else if (langData.Any(kv => string.IsNullOrEmpty(kv.Value)))
             {
                 throw new MalformedStringResourceException($"Key {key} has not been fully translated!");
             }

@@ -16,7 +16,8 @@ namespace Clpsplug.I18n.Editor
         private string _stringPath;
         private string _namespace;
         private string _outputLocation;
-        private bool _includeNumericInChar;
+        private bool _includeNumericAndSymbolsInChar;
+        private bool _includeAlphaInChar;
         private string _usedChars;
         private bool _isStringPathValid;
         private bool _outputDirExists;
@@ -55,7 +56,7 @@ namespace Clpsplug.I18n.Editor
                 stringPath = _stringPath,
                 namespaceForClass = _namespace,
                 location = _outputLocation,
-                includeNumericInChar = _includeNumericInChar,
+                includeNumericInChar = _includeNumericAndSymbolsInChar,
             };
         }
 
@@ -64,7 +65,7 @@ namespace Clpsplug.I18n.Editor
             _stringPath = data.stringPath;
             _namespace = data.namespaceForClass;
             _outputLocation = data.location;
-            _includeNumericInChar = data.includeNumericInChar;
+            _includeNumericAndSymbolsInChar = data.includeNumericInChar;
         }
 
         private void OnGUI()
@@ -198,11 +199,18 @@ namespace Clpsplug.I18n.Editor
             GUILayout.Label("Useful for TextMeshPro atlas generation.");
             EditorGUI.BeginDisabledGroup(_isGeneratingChars || _isGeneratingClass);
 
-            _includeNumericInChar = EditorGUILayout.Toggle(
+            _includeNumericAndSymbolsInChar = EditorGUILayout.Toggle(
                 new GUIContent(
                     "Include numeric (and related) chars",
-                    "If ticked, character used will come with the numeric-related characters ([0-9.,+-])."
-                ), _includeNumericInChar
+                    "If ticked, character used will come with the numeric-related characters ([0-9.,+-] and more)."
+                ), _includeNumericAndSymbolsInChar
+            );
+
+            _includeAlphaInChar = EditorGUILayout.Toggle(
+                new GUIContent(
+                    "Include all alphabets",
+                    "If ticked, all alphabets (lower and uppercase) will be included."),
+                _includeAlphaInChar
             );
 
             if (GUILayout.Button("Get characters used in the strings asset"))
@@ -218,19 +226,39 @@ namespace Clpsplug.I18n.Editor
                     _isGeneratingChars = false;
                     var builder = new StringBuilder();
                     var r = result.Where(c => c != '\n').ToHashSet();
-                    if (_includeNumericInChar)
+                    if (_includeNumericAndSymbolsInChar)
                     {
-                        const string numeric = "0123456789+-.,";
-                        builder.Append(numeric);
+                        var numericAndSymbols = new List<char>();
+                        numericAndSymbols.AddRange(Enumerable.Range(32, 64 - 32 + 1).Select(i => (char)i));
+                        numericAndSymbols.AddRange(Enumerable.Range(91, 96 - 91 + 1).Select(i => (char)i));
+                        numericAndSymbols.AddRange(Enumerable.Range(123, 126 - 123 + 1).Select(i => (char)i));
+                        numericAndSymbols.Add((char)160);
+                        var str = string.Concat(numericAndSymbols);
+                        builder.Append(str);
                         // Prevent duplicate
-                        r = r.Where(c => !numeric.Contains(c)).ToHashSet();
+                        r = r.Where(c => !str.Contains(c)).ToHashSet();
                     }
 
+                    if (_includeAlphaInChar)
+                    {
+                        var alphas = new List<char>();
+                        alphas.AddRange(Enumerable.Range('A', 26).Select(i => (char)i));
+                        alphas.AddRange(Enumerable.Range('a', 26).Select(i => (char)i));
+                        var str = string.Concat(alphas);
+                        builder.Append(str);
+                        r = r.Where(c => !str.Contains(c)).ToHashSet();
+                    }
+
+                    var langStr = string.Empty;
                     for (var i = 0; i < sl.Count(); i++)
                     {
                         // Required for displaying supported languages
-                        builder.Append(sl.GetDisplayFromId(i));
+                        langStr = string.Concat(langStr, sl.GetDisplayFromId(i));
                     }
+
+                    langStr = string.Concat(langStr.Where(c => !builder.ToString().Contains(c)));
+                    builder.Append(langStr);
+                    r = r.Where(c => !langStr.Contains(c)).ToHashSet();
 
                     builder.Append(string.Concat(r));
                     builder.Append("()_"); // TextMeshPro requires these three

@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Clpsplug.I18n.Editor.Generator;
 using Clpsplug.I18n.Runtime;
 using UnityEditor;
+using UnityEditor.iOS;
 using UnityEngine;
 
 namespace Clpsplug.I18n.Editor
@@ -74,21 +75,19 @@ namespace Clpsplug.I18n.Editor
             {
                 richText = true,
             };
+            var config = Resources.Load<I18nStringConfig>("I18n/I18nStringConfig") ??
+                         CreateInstance<I18nStringConfig>();
             GUILayout.Label("<size=20><b>Internationalization Tools</b></size>", style);
-            GUILayout.Label("Make sure you give a correct path to the string definition first.");
+            GUILayout.Label($"Your string source path is set to: Assets/Resources/{config.StringSourcePath}");
+            _stringPath = config.StringSourcePath;
             EditorGUIUtility.labelWidth = 300f;
-            _stringPath = EditorGUILayout.TextField(
-                new GUIContent(
-                    "Path to i18n string source, Assets/Resources/",
-                    "Enter the path that comes after the Resources folder. Does NOT start with /."),
-                _stringPath
-            );
             if (!_isStringPathValid)
             {
                 EditorGUILayout.HelpBox(
-                    "Such a string asset is not found!\n" +
-                    "Double check the path - especially if you haven't accidentally prepended Assets/Resources/."
-                    ,
+                    "String asset not found at the specified location!\n" +
+                    "Double check the file name - especially if you have created I18nStringConfig.\n" +
+                    "Check that the name of the config file is I18nStringConfig and " +
+                    "it exists under Assets/Resources/I18n as well.",
                     MessageType.Error
                 );
             }
@@ -124,17 +123,27 @@ namespace Clpsplug.I18n.Editor
                 );
                 if (_isStringPathValid)
                 {
-                    // Read file and compare hash
-                    var hash = new I18nStringParser(_stringPath).GetHash();
-                    using var sr = new StreamReader(Path.Join(Application.dataPath, _outputLocation));
-                    var text = sr.ReadToEnd();
-                    var match = regex.Match(text);
-                    if (!match.Success || match.Groups[1].Value != hash)
+                    try
+                    {
+                        // Read file and compare hash
+                        var hash = new I18nStringParser(_stringPath).GetHash();
+                        using var sr = new StreamReader(Path.Join(Application.dataPath, _outputLocation));
+                        var text = sr.ReadToEnd();
+                        var match = regex.Match(text);
+                        if (!match.Success || match.Groups[1].Value != hash)
+                        {
+                            EditorGUILayout.HelpBox(
+                                "There appears to be a modification to the string resource. " +
+                                "Update your key file so that you can refer to keys from the code.",
+                                MessageType.Warning
+                            );
+                        }
+                    }
+                    catch (StringNotFoundException)
                     {
                         EditorGUILayout.HelpBox(
-                            "There appears to be a modification to the string resource. " +
-                            "Update your key file so that you can refer to keys from the code.",
-                            MessageType.Warning
+                            "There was an error trying to read the string resource: does it exist?",
+                            MessageType.Error
                         );
                     }
                 }

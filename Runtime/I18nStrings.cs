@@ -212,6 +212,7 @@ namespace Clpsplug.I18n.Runtime
 
         private readonly List<LocalizedStringData> _data;
 
+        // TODO: Support different string definition names
         public static string Path { get; set; } = "strings";
 
         private static readonly object InitLock = new object();
@@ -255,6 +256,14 @@ namespace Clpsplug.I18n.Runtime
         private I18nStringRepository()
         {
             SupportedLanguage = SupportedLanguageLoader.GetInstance().SupportedLanguage;
+
+            var config = Resources.Load<I18nStringConfig>("I18n/I18nStringConfig");
+            if (config == null)
+            {
+                config = ScriptableObject.CreateInstance<I18nStringConfig>();
+            }
+
+            Path = config.StringSourcePath;
             var parser = new I18nStringParser(Path);
             _data = parser.Parse(SupportedLanguage);
         }
@@ -290,6 +299,13 @@ namespace Clpsplug.I18n.Runtime
             {
                 return $"String {key} not localized!!!!!";
             }
+        }
+
+        public LocalizedStringData GetLocalizedStringFromKey(string key)
+        {
+            var explodedKey = key.Split('.');
+            var rootLS = _data.First(ls => ls.Key == explodedKey.First());
+            return FindStringRecursive(rootLS, explodedKey.Skip(1).ToArray());
         }
 
         private static string PerformRequiredReplacement(string origin, Dictionary<string, object> valueDict)

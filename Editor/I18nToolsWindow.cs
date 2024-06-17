@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Clpsplug.I18n.Editor.Generator;
 using Clpsplug.I18n.Runtime;
 using UnityEditor;
-using UnityEditor.iOS;
 using UnityEngine;
 
 namespace Clpsplug.I18n.Editor

@@ -56,6 +56,7 @@ namespace Clpsplug.I18n.Editor.Generator
             sb.AppendLine("// Any changes will be lost.");
             sb.AppendLine($"// String resource file hash: {parser.GetResourceHash()}");
             sb.AppendLine("// ReSharper disable InconsistentNaming");
+            sb.AppendLine("// ReSharper disable MemberHidesStaticFromOuterClass");
             sb.AppendLine("// ReSharper disable UnusedMember.Global\n"); // \n intentional
             var indentCount = 0;
             if (!string.IsNullOrEmpty(_namespace))
@@ -67,8 +68,9 @@ namespace Clpsplug.I18n.Editor.Generator
             sb.AppendLine(
                 $"{Indent(indentCount)}/// <summary>"
             );
+            var type = useStringKey ? "string" : "uint";
             sb.AppendLine(
-                $"{Indent(indentCount)}/// Members in this class can be supplied into <see cref=\"ExplodingCable.I18n.Runtime.LocalizedString.For\"/> parameter."
+                $"{Indent(indentCount)}/// Members in this class can be supplied into <see cref=\"Clpsplug.I18n.Runtime.I18nString.For({type})\"/> parameter."
             );
             sb.AppendLine(
                 $"{Indent(indentCount)}/// </summary>"

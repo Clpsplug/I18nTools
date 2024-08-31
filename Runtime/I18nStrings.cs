@@ -147,7 +147,7 @@ namespace Clpsplug.I18n.Runtime
         /// <see cref="I18nString"/> constructor, intentionally hidden
         /// </summary>
         /// <param name="key"></param>
-        /// <seealso cref="For"/>
+        /// <seealso cref="I18nString.For(string)"/>
         private I18nString(string key)
         {
             this.key = key;
@@ -155,6 +155,11 @@ namespace Clpsplug.I18n.Runtime
             _isSoughtByHash = false;
         }
 
+        /// <summary>
+        /// <see cref="I18nString"/> constructor, intentionally hidden
+        /// </summary>
+        /// <param name="hash">FNV-1a hash of string key</param>
+        /// <seealso cref="I18nString.For(uint)"/>;
         private I18nString(uint hash)
         {
             key = null;
@@ -197,11 +202,16 @@ namespace Clpsplug.I18n.Runtime
                     .ToList();
             }
 
-            var originalKey = I18nStringRepository.GetInstance().GetLocalizedStringData(hash).originalKey;
+            var originalKey = I18nStringRepository.GetInstance().GetLocalizedStringData(hash).OriginalKey;
             return I18nStringRepository.GetInstance().GetChildrenKeysForKey(originalKey).Select(k => For($"{key}.{k}"))
                 .ToList();
         }
 
+        /// <summary>
+        /// Attempt to pull string entry from the repository.
+        /// </summary>
+        /// <param name="valueDict"></param>
+        /// <returns></returns>
         public string GetString(Dictionary<string, object> valueDict = null)
         {
             return !_isSoughtByHash && string.IsNullOrEmpty(key)
@@ -316,10 +326,19 @@ namespace Clpsplug.I18n.Runtime
             parser.ParseForHashedString(SupportedLanguage, _hashedData);
         }
 
+        /// <summary>
+        /// Change the language pulled from this library
+        /// </summary>
+        /// <param name="id"></param>
+        /// <remarks>
+        /// Existing <see cref="I18nStaticLabelBase"/> components won't auto-update
+        /// until you call <see cref="I18nStaticLabelBase.ReloadText"/>.
+        /// </remarks>
         public void ChangeLanguage(int id)
         {
             _currentLanguageId = id;
         }
+
 
         public FlatLocalizedStringData GetLocalizedStringData(uint hash)
         {
@@ -333,6 +352,13 @@ namespace Clpsplug.I18n.Runtime
             }
         }
 
+        /// <summary>
+        /// Retrieves the string for the key and the language, replacing keys with <see cref="valueDict"/>.
+        /// This method uses integer hash instead of string key.
+        /// </summary>
+        /// <param name="hash">Integer hash of string key. Use <see cref="StringExtension.Fnv1aHash"/>.</param>
+        /// <param name="valueDict"></param>
+        /// <returns></returns>
         public string GetStringForCurrentLanguage(uint hash, Dictionary<string, object> valueDict = null)
         {
             try
@@ -377,6 +403,11 @@ namespace Clpsplug.I18n.Runtime
             }
         }
 
+        /// <summary>
+        /// Used for string viewer. Not to be used for runtime.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public LocalizedStringData GetLocalizedStringFromKey(string key)
         {
             var explodedKey = key.Split('.');
@@ -390,6 +421,13 @@ namespace Clpsplug.I18n.Runtime
             return valueDict == null ? unescapedNewline : unescapedNewline.FormatFromDictionary(valueDict);
         }
 
+        /// <summary>
+        /// Finds children key within the given string key.
+        /// If there are none, this will return an empty <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public IEnumerable<string> GetChildrenKeysForKey(string key)
         {
             try
@@ -478,7 +516,10 @@ namespace Clpsplug.I18n.Runtime
     /// </summary>
     public class FlatLocalizedStringData
     {
-        public string originalKey;
+        /// <summary>
+        /// Original string key for debug purposes & child element finding purposes.
+        /// </summary>
+        public string OriginalKey;
 
         /// <summary>
         /// Same as <see cref="LocalizedStringData"/>,
@@ -486,6 +527,11 @@ namespace Clpsplug.I18n.Runtime
         /// </summary>
         public Dictionary<string, string> LocalizationStrings { get; internal set; }
 
+        /// <summary>
+        /// Return 'substitute' language when unsupported string comes in for whatever reason.
+        /// This should not fire to be honest.
+        /// </summary>
+        /// <returns></returns>
         public string GetSubstituteString()
         {
             return LocalizationStrings.TryGetValue("en", out var text)
@@ -520,6 +566,11 @@ namespace Clpsplug.I18n.Runtime
                     .Select(x => x.Value).ToArray());
         }
 
+        /// <summary>
+        /// FNV-1a hash function
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         // ReSharper disable once InconsistentNaming
         public static uint Fnv1aHash(this string input)
         {

@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -14,9 +15,16 @@ namespace Clpsplug.I18n.Runtime
         ]
         protected string key;
 
+        private uint _hash;
+
+        protected virtual void Awake()
+        {
+            _hash = key.Fnv1aHash();
+        }
+
         private void Start()
         {
-            Text.text = I18nString.For(key);
+            Text.text = I18nString.For(_hash);
         }
 
         public abstract TMP_Text Text { get; }
@@ -24,7 +32,7 @@ namespace Clpsplug.I18n.Runtime
 
         public void ReloadText()
         {
-            Text.text = I18nString.For(key);
+            Text.text = I18nString.For(_hash);
         }
     }
 }

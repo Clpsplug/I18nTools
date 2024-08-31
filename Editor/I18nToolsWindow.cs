@@ -18,6 +18,7 @@ namespace Clpsplug.I18n.Editor
         private string _outputLocation;
         private bool _includeNumericAndSymbolsInChar;
         private bool _includeAlphaInChar;
+        private bool _useStringKey;
         private string _usedChars;
         private bool _isStringPathValid;
         private bool _outputDirExists;
@@ -57,6 +58,7 @@ namespace Clpsplug.I18n.Editor
                 namespaceForClass = _namespace,
                 location = _outputLocation,
                 includeNumericInChar = _includeNumericAndSymbolsInChar,
+                useStringKey = _useStringKey,
             };
         }
 
@@ -66,6 +68,7 @@ namespace Clpsplug.I18n.Editor
             _namespace = data.namespaceForClass;
             _outputLocation = data.location;
             _includeNumericAndSymbolsInChar = data.includeNumericInChar;
+            _useStringKey = data.useStringKey;
         }
 
         private void OnGUI()
@@ -125,7 +128,7 @@ namespace Clpsplug.I18n.Editor
                     try
                     {
                         // Read file and compare hash
-                        var hash = new I18nStringParser(_stringPath).GetHash();
+                        var hash = new I18nStringParser(_stringPath).GetResourceHash();
                         using var sr = new StreamReader(Path.Join(Application.dataPath, _outputLocation));
                         var text = sr.ReadToEnd();
                         var match = regex.Match(text);
@@ -172,6 +175,24 @@ namespace Clpsplug.I18n.Editor
                 );
             }
 
+            _useStringKey = EditorGUILayout.Toggle(
+                new GUIContent(
+                    "Use string to find the localized string (deprecated)",
+                    "If ticked, the generated class will use string as a member. However, this is now deprecated because of a performance reason."
+                ), _useStringKey
+            );
+
+            if (_useStringKey)
+            {
+                EditorGUILayout.HelpBox(
+                    "You have chosen to use string as a key to find the localized string.\n" +
+                    "However, this is no longer supported as it is expensive to operate on string in C#.\n" +
+                    "By unchecking the toggle above, the generated class will use integer (a hash from the string key) instead and will operate faster.\n" +
+                    "You may keep the toggle on if that causes an issue (most likely because of a hash clash).",
+                    MessageType.Warning
+                );
+            }
+
             EditorGUI.BeginDisabledGroup(_isGeneratingClass || _isGeneratingChars);
             if (GUILayout.Button("Generate Internationalization string class"))
             {
@@ -180,7 +201,7 @@ namespace Clpsplug.I18n.Editor
                 var generator = new I18nGenerator(_stringPath, _namespace, _outputLocation, IndentIncrement);
                 try
                 {
-                    generator.OnGenerate();
+                    generator.OnGenerate(_useStringKey);
                     _isGeneratingClass = false;
                     Debug.Log(
                         "Generation complete! You might need to un-focus and focus this Unity window for Unity to compile it."
@@ -353,6 +374,7 @@ namespace Clpsplug.I18n.Editor
         public string namespaceForClass;
         public string location;
         public bool includeNumericInChar;
+        public bool useStringKey = true;
     }
 
     public static class EnumerableExtension

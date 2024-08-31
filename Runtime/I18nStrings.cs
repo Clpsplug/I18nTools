@@ -203,7 +203,8 @@ namespace Clpsplug.I18n.Runtime
             }
 
             var originalKey = I18nStringRepository.GetInstance().GetLocalizedStringData(hash).OriginalKey;
-            return I18nStringRepository.GetInstance().GetChildrenKeysForKey(originalKey).Select(k => For($"{key}.{k}"))
+            return I18nStringRepository.GetInstance().GetChildrenKeysForKey(originalKey)
+                .Select(k => For($"{originalKey}.{k}"))
                 .ToList();
         }
 

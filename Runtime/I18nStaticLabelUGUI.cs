@@ -9,10 +9,11 @@ namespace Clpsplug.I18n.Runtime
         private TextMeshProUGUI _text;
         private RectTransform _rectTransform;
 
-        private void Awake()
+        protected override void Awake()
         {
             _text = GetComponent<TextMeshProUGUI>();
             _rectTransform = GetComponent<RectTransform>();
+            base.Awake();
         }
 
         public override TMP_Text Text => _text;

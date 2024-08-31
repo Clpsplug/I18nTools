@@ -137,7 +137,11 @@ namespace Clpsplug.I18n.Runtime
         /// </para>
         /// Either set by code or by inspector.
         /// </summary>
-        public string key;
+        private readonly string key;
+
+        private readonly uint hash;
+
+        private readonly bool _isSoughtByHash;
 
         /// <summary>
         /// <see cref="I18nString"/> constructor, intentionally hidden
@@ -147,6 +151,15 @@ namespace Clpsplug.I18n.Runtime
         private I18nString(string key)
         {
             this.key = key;
+            hash = 0;
+            _isSoughtByHash = false;
+        }
+
+        private I18nString(uint hash)
+        {
+            key = null;
+            this.hash = hash;
+            _isSoughtByHash = true;
         }
 
         /// <summary>
@@ -161,14 +174,39 @@ namespace Clpsplug.I18n.Runtime
         }
 
         /// <summary>
+        /// Get an instance of the localized string for the key.
+        /// All localizations can be retrieved from the return.
+        /// </summary>
+        /// <param name="hash">FNV-1a hash of the string</param>
+        /// <returns></returns>
+        public static I18nString For(uint hash)
+        {
+            return new I18nString(hash);
+        }
+
+        /// <summary>
         /// Gets <see cref="I18nString"/>s included within a certain element.
         /// This is useful when you want to randomly retrieve a string within a set.
         /// </summary>
         /// <returns></returns>
         public List<I18nString> GetChildren()
         {
-            return I18nStringRepository.GetInstance().GetChildrenKeysForKey(key).Select(k => For($"{key}.{k}"))
+            if (!_isSoughtByHash)
+            {
+                return I18nStringRepository.GetInstance().GetChildrenKeysForKey(key).Select(k => For($"{key}.{k}"))
+                    .ToList();
+            }
+
+            var originalKey = I18nStringRepository.GetInstance().GetLocalizedStringData(hash).originalKey;
+            return I18nStringRepository.GetInstance().GetChildrenKeysForKey(originalKey).Select(k => For($"{key}.{k}"))
                 .ToList();
+        }
+
+        public string GetString(Dictionary<string, object> valueDict = null)
+        {
+            return !_isSoughtByHash && string.IsNullOrEmpty(key)
+                ? "No localization key specified!!!!!"
+                : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(hash, valueDict);
         }
 
         /// <summary>
@@ -176,7 +214,7 @@ namespace Clpsplug.I18n.Runtime
         /// which is defined by <see cref="I18nStringRepository"/>.
         /// </summary>
         /// <returns></returns>
-        public string GetString(Dictionary<string, object> valueDict = null)
+        public string GetStringByStringKey(Dictionary<string, object> valueDict = null)
         {
             return key == ""
                 ? "No localization key specified!!!!!"
@@ -185,7 +223,7 @@ namespace Clpsplug.I18n.Runtime
 
         public override string ToString()
         {
-            return GetString();
+            return _isSoughtByHash ? GetString() : GetStringByStringKey();
         }
 
         /// <summary>
@@ -210,7 +248,15 @@ namespace Clpsplug.I18n.Runtime
 
         public static ISupportedLanguage SupportedLanguage { get; private set; }
 
+        /// <summary>
+        /// Localized string data as a tree structure, meant to be used for <see cref="GetChildrenKeysForKey"/>.
+        /// </summary>
         private readonly List<LocalizedStringData> _data;
+
+        /// <summary>
+        /// Hashed version of the localized string. This is to be accessed first.
+        /// </summary>
+        private readonly Dictionary<uint, FlatLocalizedStringData> _hashedData;
 
         // TODO: Support different string definition names
         public static string Path { get; set; } = "strings";
@@ -266,6 +312,8 @@ namespace Clpsplug.I18n.Runtime
             Path = config.StringSourcePath;
             var parser = new I18nStringParser(Path);
             _data = parser.Parse(SupportedLanguage);
+            _hashedData = new Dictionary<uint, FlatLocalizedStringData>();
+            parser.ParseForHashedString(SupportedLanguage, _hashedData);
         }
 
         public void ChangeLanguage(int id)
@@ -273,12 +321,40 @@ namespace Clpsplug.I18n.Runtime
             _currentLanguageId = id;
         }
 
+        public FlatLocalizedStringData GetLocalizedStringData(uint hash)
+        {
+            try
+            {
+                return _hashedData[hash];
+            }
+            catch (KeyNotFoundException)
+            {
+                return null;
+            }
+        }
+
+        public string GetStringForCurrentLanguage(uint hash, Dictionary<string, object> valueDict = null)
+        {
+            try
+            {
+                var stringData = _hashedData[hash];
+                return PerformRequiredReplacement(
+                    stringData.LocalizationStrings[SupportedLanguage.GetLanguageCodes()[_currentLanguageId]],
+                    valueDict
+                );
+            }
+            catch (KeyNotFoundException)
+            {
+                return $"String not localized for hash {hash}!!!";
+            }
+        }
+
         /// <summary>
         /// Retrieves the string for the key and the language, replacing keys with <see cref="valueDict"/>.
         /// </summary>
         /// <param name="key">key for the i18n string.</param>
         /// <param name="valueDict">
-        /// If the string has replacement tokens ({token},)
+        /// If the string has replacement tokens ({token}),
         /// specify the substitutes with 'tokenKey'-'value' dictionary.
         /// </param>
         /// <returns>Localized string, but in case of non localized string, an error string will be returned.</returns>
@@ -395,6 +471,29 @@ namespace Clpsplug.I18n.Runtime
         }
     }
 
+    /// <summary>
+    /// <see cref="LocalizedStringData"/> that does not have the tree structure.
+    /// The key for this class is hashed into an integer,
+    /// making the search lightning faster than using <see cref="LocalizedStringData"/>.
+    /// </summary>
+    public class FlatLocalizedStringData
+    {
+        public string originalKey;
+
+        /// <summary>
+        /// Same as <see cref="LocalizedStringData"/>,
+        /// this holds text for each language.
+        /// </summary>
+        public Dictionary<string, string> LocalizationStrings { get; internal set; }
+
+        public string GetSubstituteString()
+        {
+            return LocalizationStrings.TryGetValue("en", out var text)
+                ? text
+                : $"This text is not localized, and attempt to get substitute string failed!";
+        }
+    }
+
     public static class StringExtension
     {
         /// <summary>
@@ -419,6 +518,22 @@ namespace Clpsplug.I18n.Runtime
                 valueDict
                     .OrderBy(x => keyToInt[x.Key])
                     .Select(x => x.Value).ToArray());
+        }
+
+        // ReSharper disable once InconsistentNaming
+        public static uint Fnv1aHash(this string input)
+        {
+            const uint fnvPrime = 16777619;
+            const uint offsetBasis = 2166136261;
+
+            var hash = offsetBasis;
+            foreach (var c in input)
+            {
+                hash ^= c;
+                hash *= fnvPrime;
+            }
+
+            return hash;
         }
     }
 }

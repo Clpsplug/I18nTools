@@ -75,12 +75,6 @@ namespace Clpsplug.I18n.Runtime
         public ISupportedLanguage SupportedLanguage { get; }
     }
 
-    internal enum ParseMode
-    {
-        ByString,
-        ByHash,
-    }
-
     /// <summary>
     /// Parser of the I18n string resource.
     /// Usually is not of much use user-side.

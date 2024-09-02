@@ -12,6 +12,8 @@ using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
+    using StringHashKey = UInt32;
+
     /// <summary>
     /// Gets the supported language configuration from the config file.
     /// </summary>

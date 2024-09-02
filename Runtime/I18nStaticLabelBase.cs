@@ -14,7 +14,7 @@ namespace Clpsplug.I18n.Runtime
         ]
         protected string key;
 
-        private uint _hash;
+        private StringHashKey _hash;
 
         protected virtual void Awake()
         {

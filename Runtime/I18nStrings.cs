@@ -9,6 +9,8 @@ using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
+    using StringHashKey = UInt32;
+
     /// <summary>
     /// Supported language configuration interface
     /// </summary>
@@ -139,7 +141,7 @@ namespace Clpsplug.I18n.Runtime
         /// </summary>
         private readonly string key;
 
-        private readonly uint hash;
+        private readonly StringHashKey hash;
 
         private readonly bool _isSoughtByHash;
 
@@ -159,8 +161,8 @@ namespace Clpsplug.I18n.Runtime
         /// <see cref="I18nString"/> constructor, intentionally hidden
         /// </summary>
         /// <param name="hash">FNV-1a hash of string key</param>
-        /// <seealso cref="I18nString.For(uint)"/>;
-        private I18nString(uint hash)
+        /// <seealso cref="I18nString.For(StringHashKey)"/>;
+        private I18nString(StringHashKey hash)
         {
             key = null;
             this.hash = hash;
@@ -184,7 +186,7 @@ namespace Clpsplug.I18n.Runtime
         /// </summary>
         /// <param name="hash">FNV-1a hash of the string</param>
         /// <returns></returns>
-        public static I18nString For(uint hash)
+        public static I18nString For(StringHashKey hash)
         {
             return new I18nString(hash);
         }
@@ -267,7 +269,7 @@ namespace Clpsplug.I18n.Runtime
         /// <summary>
         /// Hashed version of the localized string. This is to be accessed first.
         /// </summary>
-        private readonly Dictionary<uint, FlatLocalizedStringData> _hashedData;
+        private readonly Dictionary<StringHashKey, FlatLocalizedStringData> _hashedData;
 
         // TODO: Support different string definition names
         public static string Path { get; set; } = "strings";
@@ -323,7 +325,7 @@ namespace Clpsplug.I18n.Runtime
             Path = config.StringSourcePath;
             var parser = new I18nStringParser(Path);
             _data = parser.Parse(SupportedLanguage);
-            _hashedData = new Dictionary<uint, FlatLocalizedStringData>();
+            _hashedData = new Dictionary<StringHashKey, FlatLocalizedStringData>();
             parser.ParseForHashedString(SupportedLanguage, _hashedData);
         }
 
@@ -341,7 +343,7 @@ namespace Clpsplug.I18n.Runtime
         }
 
 
-        public FlatLocalizedStringData GetLocalizedStringData(uint hash)
+        public FlatLocalizedStringData GetLocalizedStringData(StringHashKey hash)
         {
             try
             {
@@ -360,7 +362,7 @@ namespace Clpsplug.I18n.Runtime
         /// <param name="hash">Integer hash of string key. Use <see cref="StringExtension.Fnv1aHash"/>.</param>
         /// <param name="valueDict"></param>
         /// <returns></returns>
-        public string GetStringForCurrentLanguage(uint hash, Dictionary<string, object> valueDict = null)
+        public string GetStringForCurrentLanguage(StringHashKey hash, Dictionary<string, object> valueDict = null)
         {
             try
             {
@@ -573,10 +575,10 @@ namespace Clpsplug.I18n.Runtime
         /// <param name="input"></param>
         /// <returns></returns>
         // ReSharper disable once InconsistentNaming
-        public static uint Fnv1aHash(this string input)
+        public static StringHashKey Fnv1aHash(this string input)
         {
-            const uint fnvPrime = 16777619;
-            const uint offsetBasis = 2166136261;
+            const StringHashKey fnvPrime = 16777619;
+            const StringHashKey offsetBasis = 2166136261;
 
             var hash = offsetBasis;
             foreach (var c in input)

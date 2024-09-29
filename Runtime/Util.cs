@@ -12,6 +12,8 @@ using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
+    using StringHashKey = UInt32;
+
     /// <summary>
     /// Gets the supported language configuration from the config file.
     /// </summary>
@@ -73,12 +75,6 @@ namespace Clpsplug.I18n.Runtime
         public ISupportedLanguage SupportedLanguage { get; }
     }
 
-    internal enum ParseMode
-    {
-        ByString,
-        ByHash,
-    }
-
     /// <summary>
     /// Parser of the I18n string resource.
     /// Usually is not of much use user-side.
@@ -133,7 +129,7 @@ namespace Clpsplug.I18n.Runtime
         /// <param name="withSupportedLanguage"></param>
         /// <param name="outDict"></param>
         public void ParseForHashedString(ISupportedLanguage withSupportedLanguage,
-            Dictionary<uint, FlatLocalizedStringData> outDict)
+            Dictionary<StringHashKey, FlatLocalizedStringData> outDict)
         {
             var categoryTextAsset = Resources.Load<TextAsset>(_inputPath);
             if (categoryTextAsset == null)
@@ -233,10 +229,10 @@ namespace Clpsplug.I18n.Runtime
         }
 
         private void RecursiveFindStrings(JObject obj, ISupportedLanguage sl, string rootNamespace,
-            Dictionary<uint, FlatLocalizedStringData> outDict)
+            Dictionary<StringHashKey, FlatLocalizedStringData> outDict)
         {
             string key;
-            uint hashedKey;
+            StringHashKey hashedKey;
             bool excludeNewline;
             if (obj.TryGetValue("key", out var keyToken))
             {

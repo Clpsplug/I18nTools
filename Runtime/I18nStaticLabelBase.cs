@@ -1,8 +1,11 @@
+using System;
 using TMPro;
 using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
+    using StringHashKey = UInt32;
+
     public abstract class I18nStaticLabelBase : MonoBehaviour
     {
         [SerializeField]
@@ -14,7 +17,7 @@ namespace Clpsplug.I18n.Runtime
         ]
         protected string key;
 
-        private uint _hash;
+        private StringHashKey _hash;
 
         protected virtual void Awake()
         {

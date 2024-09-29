@@ -58,6 +58,7 @@ namespace Clpsplug.I18n.Editor.Generator
             sb.AppendLine("// ReSharper disable InconsistentNaming");
             sb.AppendLine("// ReSharper disable MemberHidesStaticFromOuterClass");
             sb.AppendLine("// ReSharper disable UnusedMember.Global\n"); // \n intentional
+            sb.AppendLine($"using StringHashKey = System.UInt32;\n"); // \n intentional
             var indentCount = 0;
             if (!string.IsNullOrEmpty(_namespace))
             {
@@ -135,7 +136,7 @@ namespace Clpsplug.I18n.Editor.Generator
                         sb.AppendLine(
                             useStringKey
                                 ? $"{Indent(currentIndent)}public const string {saneKey} = \"{parentSoFar}{entry.Key}\";\n"
-                                : $"{Indent(currentIndent)}public const StringHashKey {saneKey} = 0x{(parentSoFar + entry.Key).Fnv1aHash():08X};"
+                                : $"{Indent(currentIndent)}public const StringHashKey {saneKey} = 0x{(parentSoFar + entry.Key).Fnv1aHash():X08};"
                         );
                     }
 
@@ -173,7 +174,7 @@ namespace Clpsplug.I18n.Editor.Generator
                     sb.AppendLine(
                         useStringKey
                             ? $"{Indent(currentIndent)}public const string {saneKey} = \"{parentSoFar}{entry.Key}\";"
-                            : $"{Indent(currentIndent)}public const StringHashKey {saneKey} = 0x{(parentSoFar + entry.Key).Fnv1aHash():08X};"
+                            : $"{Indent(currentIndent)}public const StringHashKey {saneKey} = 0x{(parentSoFar + entry.Key).Fnv1aHash():X08};"
                     );
                 }
             }

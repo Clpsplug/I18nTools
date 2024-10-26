@@ -210,6 +210,13 @@ namespace Clpsplug.I18n.Runtime
                 .ToList();
         }
 
+        public string GetStringForLanguage(int langID)
+        {
+            return !_isSoughtByHash && string.IsNullOrEmpty(key)
+                ? "No localization key specified!!!!!"
+                : I18nStringRepository.GetInstance().GetLocalizedStringData(hash).LocalizationStrings[I18nStringRepository.SupportedLanguage.GetCodeFromId(langID)];
+        }
+        
         /// <summary>
         /// Attempt to pull string entry from the repository.
         /// </summary>
@@ -539,10 +546,28 @@ namespace Clpsplug.I18n.Runtime
         {
             return LocalizationStrings.TryGetValue("en", out var text)
                 ? text
-                : $"This text is not localized, and attempt to get substitute string failed!";
+                : "This text is not localized, and attempt to get substitute string failed!";
         }
     }
 
+    /// <summary>
+    /// A localization string that is referenced by a file, not json.
+    /// Useful for big blob of text.
+    /// </summary>
+    public class FileRefStringData
+    {
+        public string Key;
+        
+        public Dictionary<string, string> LocalizationStrings { get; internal set; }
+
+        public string GetSubstituteString()
+        {
+            return LocalizationStrings.TryGetValue("en", out var text)
+                ?text
+                : "This text is not localized, attempt to get substitute string failed!";
+        }
+    }
+    
     public static class StringExtension
     {
         /// <summary>

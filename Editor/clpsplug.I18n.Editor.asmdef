@@ -2,7 +2,8 @@
     "name": "clpsplug.I18n.Editor",
     "rootNamespace": "Clpsplug.I18n.Editor",
     "references": [
-        "GUID:7ffe12aff780741faa355e4afa91974c"
+        "GUID:7ffe12aff780741faa355e4afa91974c",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
     ],
     "includePlatforms": [
         "Editor"

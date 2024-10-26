@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Clpsplug.I18n.Runtime;
+using TMPro;
 using UnityEditor;
+using UnityEngine;
 
 namespace Clpsplug.I18n.Editor.InspectorComponent
 {
@@ -67,7 +70,29 @@ namespace Clpsplug.I18n.Editor.InspectorComponent
                     strBuilder.AppendLine($"{code}: {str.LocalizationStrings[code]}");
                 }
 
+                EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+                if (GUILayout.Button("Copy text for primary language to TMP component"))
+                {
+                    TMP_Text tmpCmp = ((I18nStaticLabelBase)target).GetComponent<TextMeshPro>();
+                    if (tmpCmp == null)
+                    {
+                        tmpCmp = ((I18nStaticLabelBase)target).GetComponent<TextMeshProUGUI>();
+                    }
+
+                    tmpCmp.SetText(str.LocalizationStrings[_language.GetLanguageCodes()[0]]);
+                }
+
+                EditorGUI.EndDisabledGroup();
+
                 EditorGUILayout.HelpBox(strBuilder.ToString(), MessageType.Info, true);
+            }
+            catch (KeyNotFoundException)
+            {
+                EditorGUILayout.HelpBox(
+                    $"[WARN] {key.stringValue} does not have any string associated with it.\n" +
+                    "Could it be a parent I18n string key?",
+                    MessageType.Warning, true
+                );
             }
             catch (InvalidOperationException)
             {

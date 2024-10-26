@@ -209,13 +209,19 @@ namespace Clpsplug.I18n.Runtime
                         return string.Join(excludeNewline ? "" : "\n", ((JArray)textList).ToList());
                     }
 
-                    return "";
+                    if (obj.TryGetValue(code + "_fileref", out var fileRef))
+                    {
+                        var res = Resources.Load<TextAsset>((string)fileRef);
+                        return res == null ? null : res.text;
+                    }
+
+                    return null;
                 });
-            if (langData.All(kv => string.IsNullOrEmpty(kv.Value)))
+            if (langData.All(kv => kv.Value == null))
             {
                 langData = new Dictionary<string, string>();
             }
-            else if (langData.Any(kv => string.IsNullOrEmpty(kv.Value)))
+            else if (langData.Any(kv => kv.Value == null))
             {
                 throw new MalformedStringResourceException($"Key {key} has not been fully translated!");
             }
@@ -283,15 +289,23 @@ namespace Clpsplug.I18n.Runtime
                         return string.Join(excludeNewline ? "" : "\n", ((JArray)textList).ToList());
                     }
 
-                    return "";
+                    if (obj.TryGetValue(code + "_fileref", out var fileRef))
+                    {
+                        var res = Resources.Load<TextAsset>((string)fileRef);
+                        return res == null ? null : res.text;
+                    }
+
+                    return null;
                 });
 
-            if (langData.All(kv => string.IsNullOrEmpty(kv.Value)))
+            if (langData.All(kv => kv.Value == null))
             {
+                // If ALL language data are missing, it is well-formed (it's just a parent key.)
                 langData = new Dictionary<string, string>();
             }
-            else if (langData.Any(kv => string.IsNullOrEmpty(kv.Value)))
+            else if (langData.Any(kv => kv.Value == null))
             {
+                // If NOT ALL but SOME language data are present, it is ill-formed.
                 throw new MalformedStringResourceException($"Key {key} has not been fully translated!");
             }
 

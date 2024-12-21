@@ -312,7 +312,7 @@ namespace Clpsplug.I18n.Runtime
             /* Since this string data is 'flat', we can immediately add it to our dictionary. */
             outDict.Add(hashedKey, new FlatLocalizedStringData
             {
-                OriginalKey = string.IsNullOrEmpty(rootNamespace) ? $"{key}" : $"{rootNamespace}.{key}",
+                OriginalKey = string.IsNullOrEmpty(rootNamespace) ? $"{key}" : $"{rootNamespace}{key}",
                 LocalizationStrings = langData,
             });
 

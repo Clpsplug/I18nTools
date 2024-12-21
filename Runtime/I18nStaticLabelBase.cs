@@ -11,7 +11,7 @@ namespace Clpsplug.I18n.Runtime
         [SerializeField]
         [
             Tooltip(
-                "Use I18n string viewer for quick assign. " +
+                "Use I18n string viewer for quick assignment. " +
                 "Tools > ClpsPLUG > I18n > I18n String Viewer"
             ),
         ]

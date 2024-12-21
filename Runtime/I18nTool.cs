@@ -29,6 +29,13 @@ namespace Clpsplug.I18n.Runtime
                     );
                 }
             }
+
+            var dynamicLabels =
+                Object.FindObjectsByType<I18nStringTMPUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var label in dynamicLabels)
+            {
+                label.ReloadText();
+            }
         }
     }
 }

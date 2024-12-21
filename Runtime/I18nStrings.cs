@@ -139,9 +139,9 @@ namespace Clpsplug.I18n.Runtime
         /// </para>
         /// Either set by code or by inspector.
         /// </summary>
-        private readonly string key;
+        public readonly string Key;
 
-        private readonly StringHashKey hash;
+        public readonly StringHashKey Hash;
 
         private readonly bool _isSoughtByHash;
 
@@ -152,8 +152,8 @@ namespace Clpsplug.I18n.Runtime
         /// <seealso cref="I18nString.For(string)"/>
         private I18nString(string key)
         {
-            this.key = key;
-            hash = 0;
+            this.Key = key;
+            Hash = 0;
             _isSoughtByHash = false;
         }
 
@@ -164,8 +164,8 @@ namespace Clpsplug.I18n.Runtime
         /// <seealso cref="I18nString.For(StringHashKey)"/>;
         private I18nString(StringHashKey hash)
         {
-            key = null;
-            this.hash = hash;
+            Key = null;
+            this.Hash = hash;
             _isSoughtByHash = true;
         }
 
@@ -200,11 +200,11 @@ namespace Clpsplug.I18n.Runtime
         {
             if (!_isSoughtByHash)
             {
-                return I18nStringRepository.GetInstance().GetChildrenKeysForKey(key).Select(k => For($"{key}.{k}"))
+                return I18nStringRepository.GetInstance().GetChildrenKeysForKey(Key).Select(k => For($"{Key}.{k}"))
                     .ToList();
             }
 
-            var originalKey = I18nStringRepository.GetInstance().GetLocalizedStringData(hash).OriginalKey;
+            var originalKey = I18nStringRepository.GetInstance().GetLocalizedStringData(Hash).OriginalKey;
             return I18nStringRepository.GetInstance().GetChildrenKeysForKey(originalKey)
                 .Select(k => For($"{originalKey}.{k}"))
                 .ToList();
@@ -212,9 +212,9 @@ namespace Clpsplug.I18n.Runtime
 
         public string GetStringForLanguage(int langID)
         {
-            return !_isSoughtByHash && string.IsNullOrEmpty(key)
+            return !_isSoughtByHash && string.IsNullOrEmpty(Key)
                 ? "No localization key specified!!!!!"
-                : I18nStringRepository.GetInstance().GetLocalizedStringData(hash).LocalizationStrings[I18nStringRepository.SupportedLanguage.GetCodeFromId(langID)];
+                : I18nStringRepository.GetInstance().GetLocalizedStringData(Hash).LocalizationStrings[I18nStringRepository.SupportedLanguage.GetCodeFromId(langID)];
         }
         
         /// <summary>
@@ -224,9 +224,9 @@ namespace Clpsplug.I18n.Runtime
         /// <returns></returns>
         public string GetString(Dictionary<string, object> valueDict = null)
         {
-            return !_isSoughtByHash && string.IsNullOrEmpty(key)
+            return !_isSoughtByHash && string.IsNullOrEmpty(Key)
                 ? "No localization key specified!!!!!"
-                : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(hash, valueDict);
+                : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(Hash, valueDict);
         }
 
         /// <summary>
@@ -236,9 +236,9 @@ namespace Clpsplug.I18n.Runtime
         /// <returns></returns>
         public string GetStringByStringKey(Dictionary<string, object> valueDict = null)
         {
-            return key == ""
+            return string.IsNullOrEmpty(Key)
                 ? "No localization key specified!!!!!"
-                : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(key, valueDict);
+                : I18nStringRepository.GetInstance().GetStringForCurrentLanguage(Key, valueDict);
         }
 
         public override string ToString()

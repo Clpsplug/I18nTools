@@ -1,5 +1,4 @@
 using TMPro;
-using UnityEngine;
 
 namespace Clpsplug.I18n.Runtime
 {
@@ -24,7 +23,8 @@ namespace Clpsplug.I18n.Runtime
 
         public void ReloadText()
         {
-            text = str?.ToString();
+            // This component takes I18nString key as text.
+            text = str?.Key;
         }
     }
 }

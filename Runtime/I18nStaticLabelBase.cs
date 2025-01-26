@@ -36,5 +36,16 @@ namespace Clpsplug.I18n.Runtime
         {
             Text.text = I18nString.For(_hash);
         }
+
+        public void SetKey(string key)
+        {
+            this.key = key;
+            _hash = key.Fnv1aHash();
+        }
+
+        public void SetKey(StringHashKey key)
+        {
+            _hash = key;
+        }
     }
 }

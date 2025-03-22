@@ -82,10 +82,13 @@ namespace Clpsplug.I18n.Runtime
     public class I18nStringParser
     {
         private readonly string _inputPath;
+        private readonly string _unicodeMappingPath;
+        private UnicodeSubstitutionData _substitutionData;
 
-        public I18nStringParser(string inputPath)
+        public I18nStringParser(string inputPath, string unicodeMappingPath)
         {
             _inputPath = inputPath;
+            _unicodeMappingPath = unicodeMappingPath;
         }
 
         public string GetResourceHash()
@@ -96,7 +99,7 @@ namespace Clpsplug.I18n.Runtime
                 throw new StringNotFoundException();
             }
 
-            // Yes I know MD5 is weak but we're not dealing with cryptography here.
+            // Yes I know MD5 is weak, but we're not dealing with cryptography here.
             var md5 = MD5.Create();
             var bs = md5.ComputeHash(asset.bytes);
             md5.Clear();
@@ -115,6 +118,37 @@ namespace Clpsplug.I18n.Runtime
             if (categoryTextAsset == null)
             {
                 throw new StringNotFoundException();
+            }
+
+            var unicodeMappingTextAsset = Resources.Load<TextAsset>(_unicodeMappingPath);
+            if (!unicodeMappingTextAsset)
+            {
+                _substitutionData = null;
+            }
+            else
+            {
+                var mapObj = JObject.Parse(unicodeMappingTextAsset.text);
+                if (!mapObj.TryGetValue("substitutions", out var sub))
+                {
+                    _substitutionData = null;
+                }
+                else
+                {
+                    _substitutionData = new UnicodeSubstitutionData(sub.Select(token =>
+                    {
+                        var obj = (JObject)token;
+                        var instance = new UnicodeSubstitutionEntry();
+                        if (!obj.TryGetValue("namespace", out var ns) || !obj.TryGetValue("mapping", out var mp))
+                        {
+                            throw new MalformedUnicodeMappingException();
+                        }
+
+                        instance.nameSpace = ns.ToString();
+                        instance.mapping = mp.ToObject<Dictionary<string, int>>();
+
+                        return instance;
+                    }).ToList());
+                }
             }
 
             var obj = JArray.Parse(categoryTextAsset.text);
@@ -217,13 +251,37 @@ namespace Clpsplug.I18n.Runtime
 
                     return null;
                 });
+            // Language data can either be completely null...
             if (langData.All(kv => kv.Value == null))
             {
                 langData = new Dictionary<string, string>();
             }
+            // or a dictionary where all possible key has value.
             else if (langData.Any(kv => kv.Value == null))
             {
+                // Partially translated strings are not allowed.
                 throw new MalformedStringResourceException($"Key {key} has not been fully translated!");
+            }
+
+            // If there is a Unicode mapping available, try to substitute here to reduce strain.
+            if (_substitutionData != null)
+            {
+                var newLangData = new Dictionary<string, string>();
+                foreach (var kv in langData)
+                {
+                    var re = new Regex(@"(?<!\{)\{([^{}]+?):([^{}]+?)\}");
+                    // Extract namespace and value
+                    newLangData[kv.Key] = re.Replace(kv.Value, match =>
+                    {
+                        var nameSpace = match.Groups[1].Value;
+                        var subKey = match.Groups[2].Value;
+                        var substitution = _substitutionData.GetSubstitution(nameSpace, subKey); 
+                        // If no match is found, keep the original token
+                        return substitution.HasValue ? char.ConvertFromUtf32(substitution.Value) : match.Value;
+                    });
+                }
+
+                langData = newLangData;
             }
 
             return new LocalizedStringData
@@ -308,6 +366,27 @@ namespace Clpsplug.I18n.Runtime
                 // If NOT ALL but SOME language data are present, it is ill-formed.
                 throw new MalformedStringResourceException($"Key {key} has not been fully translated!");
             }
+            
+            // If there is a Unicode mapping available, try to substitute here to reduce strain.
+            if (_substitutionData != null)
+            {
+                var newLangData = new Dictionary<string, string>();
+                foreach (var kv in langData)
+                {
+                    var re = new Regex(@"(?<!\{)\{([^{}]+?):([^{}]+?)\}");
+                    // Extract namespace and value
+                    newLangData[kv.Key] = re.Replace(kv.Value, match =>
+                    {
+                        var nameSpace = match.Groups[1].Value;
+                        var subKey = match.Groups[2].Value;
+                        var substitution = _substitutionData.GetSubstitution(nameSpace, subKey); 
+                        // If no match is found, keep the original token
+                        return substitution.HasValue ? char.ConvertFromUtf32(substitution.Value) : match.Value;
+                    });
+                }
+
+                langData = newLangData;
+            }
 
             /* Since this string data is 'flat', we can immediately add it to our dictionary. */
             outDict.Add(hashedKey, new FlatLocalizedStringData
@@ -334,5 +413,10 @@ namespace Clpsplug.I18n.Runtime
     {
         public MalformedStringResourceException(string message) : base(message)
         { }
+    }
+
+    public class MalformedUnicodeMappingException : Exception
+    {
+        public override string Message => "Malformed unicode mapping.";
     }
 }

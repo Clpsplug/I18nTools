@@ -14,6 +14,17 @@ namespace Clpsplug.I18n.Runtime
          )]
         private string stringSourcePath = "strings";
 
+        [SerializeField,
+         Tooltip(
+             "Path to the unicode token substitution definition file." +
+             "If left blank, no substitution will be used."
+         )]
+        private string unicodeMappingDefinitionPath = "";
+
+        // ReSharper disable InconsistentNaming
         public string StringSourcePath => stringSourcePath;
+
+        public string UnicodeMappingDefinitionPath => unicodeMappingDefinitionPath;
+        // ReSharper restore InconsistentNaming
     }
 }

@@ -28,7 +28,8 @@ namespace Clpsplug.I18n.Editor.Generator
         public void OnGenerate(bool useStringKey)
         {
             List<LocalizedStringData> data;
-            var parser = new I18nStringParser(_stringPath);
+            // This is just for making the key assoc class, so no Unicode mapping should be done.
+            var parser = new I18nStringParser(_stringPath, null);
             try
             {
                 var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
@@ -190,7 +191,7 @@ namespace Clpsplug.I18n.Editor.Generator
         public IEnumerable<char> OnGetChars()
         {
             var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
-            var data = new I18nStringParser(_stringPath).Parse(sl);
+            var data = new I18nStringParser(_stringPath, null).Parse(sl);
             return RecursiveFindChars(data);
         }
 

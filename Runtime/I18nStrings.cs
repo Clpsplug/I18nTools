@@ -214,9 +214,10 @@ namespace Clpsplug.I18n.Runtime
         {
             return !_isSoughtByHash && string.IsNullOrEmpty(Key)
                 ? "No localization key specified!!!!!"
-                : I18nStringRepository.GetInstance().GetLocalizedStringData(Hash).LocalizationStrings[I18nStringRepository.SupportedLanguage.GetCodeFromId(langID)];
+                : I18nStringRepository.GetInstance().GetLocalizedStringData(Hash)
+                    .LocalizationStrings[I18nStringRepository.SupportedLanguage.GetCodeFromId(langID)];
         }
-        
+
         /// <summary>
         /// Attempt to pull string entry from the repository.
         /// </summary>
@@ -278,8 +279,8 @@ namespace Clpsplug.I18n.Runtime
         /// </summary>
         private readonly Dictionary<StringHashKey, FlatLocalizedStringData> _hashedData;
 
-        // TODO: Support different string definition names
-        public static string Path { get; set; } = "strings";
+        private static string path { get; set; } = "strings";
+        private static string unicodeMappingPath { get; set; } = "";
 
         private static readonly object InitLock = new object();
 
@@ -329,8 +330,11 @@ namespace Clpsplug.I18n.Runtime
                 config = ScriptableObject.CreateInstance<I18nStringConfig>();
             }
 
-            Path = config.StringSourcePath;
-            var parser = new I18nStringParser(Path);
+            path = config.StringSourcePath.Trim();
+            unicodeMappingPath = string.IsNullOrEmpty(config.UnicodeMappingDefinitionPath.Trim())
+                ? config.UnicodeMappingDefinitionPath.Trim()
+                : null;
+            var parser = new I18nStringParser(path, unicodeMappingPath);
             _data = parser.Parse(SupportedLanguage);
             _hashedData = new Dictionary<StringHashKey, FlatLocalizedStringData>();
             parser.ParseForHashedString(SupportedLanguage, _hashedData);
@@ -557,17 +561,51 @@ namespace Clpsplug.I18n.Runtime
     public class FileRefStringData
     {
         public string Key;
-        
+
         public Dictionary<string, string> LocalizationStrings { get; internal set; }
 
         public string GetSubstituteString()
         {
             return LocalizationStrings.TryGetValue("en", out var text)
-                ?text
+                ? text
                 : "This text is not localized, attempt to get substitute string failed!";
         }
     }
-    
+
+    [Serializable]
+    public class UnicodeSubstitutionData
+    {
+        /// <summary>
+        /// List of substitutions.
+        /// </summary>
+        public List<UnicodeSubstitutionEntry> substitutions;
+
+        public UnicodeSubstitutionData(List<UnicodeSubstitutionEntry> entries)
+        {
+            substitutions = entries;
+        }
+        
+        public int? GetSubstitution(string nameSpace, string key)
+        {
+            var entry = substitutions.FirstOrDefault(e => e.nameSpace == nameSpace);
+            return entry != null && entry.mapping.TryGetValue(key, out var value) ? value : null;
+        }
+    }
+
+    [Serializable]
+    public class UnicodeSubstitutionEntry
+    {
+        /// <summary>
+        /// Namespace for the substitution.
+        /// </summary>
+        public string nameSpace;
+
+        /// <summary>
+        /// Actual mapping.
+        /// </summary>
+        public Dictionary<string, int> mapping;
+    }
+
     public static class StringExtension
     {
         /// <summary>

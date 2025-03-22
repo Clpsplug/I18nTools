@@ -128,7 +128,7 @@ namespace Clpsplug.I18n.Editor
                     try
                     {
                         // Read file and compare hash
-                        var hash = new I18nStringParser(_stringPath).GetResourceHash();
+                        var hash = new I18nStringParser(_stringPath, null).GetResourceHash();
                         using var sr = new StreamReader(Path.Join(Application.dataPath, _outputLocation));
                         var text = sr.ReadToEnd();
                         var match = regex.Match(text);

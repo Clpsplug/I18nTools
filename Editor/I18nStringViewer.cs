@@ -132,7 +132,8 @@ namespace Clpsplug.I18n.Editor
             try
             {
                 var sl = SupportedLanguageLoader.GetInstance().SupportedLanguage;
-                var parser = new I18nStringParser(_stringPath);
+                // Replacing text to arbitrary unicode in Viewer is not a good idea. We skip it here.
+                var parser = new I18nStringParser(_stringPath, null);
                 _data = parser.Parse(sl);
             }
             catch (ArgumentNullException ane)

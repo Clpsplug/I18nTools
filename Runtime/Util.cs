@@ -121,27 +121,34 @@ namespace Clpsplug.I18n.Runtime
             }
 
             var unicodeMappingTextAsset = Resources.Load<TextAsset>(_unicodeMappingPath);
-            if (unicodeMappingTextAsset != null)
+            if (!unicodeMappingTextAsset)
             {
-                var mapObj = JArray.Parse(unicodeMappingTextAsset.text);
-                _substitutionData = new UnicodeSubstitutionData(mapObj.Select(token =>
-                {
-                    var obj = (JObject)token;
-                    var instance = new UnicodeSubstitutionEntry();
-                    if (!obj.TryGetValue("nameSpace", out var ns) || !obj.TryGetValue("mapping", out var mp))
-                    {
-                        throw new MalformedUnicodeMappingException();
-                    }
-
-                    instance.nameSpace = ns.ToString();
-                    instance.mapping = mp.ToObject<Dictionary<string, int>>();
-
-                    return instance;
-                }).ToList());
+                _substitutionData = null;
             }
             else
             {
-                _substitutionData = null;
+                var mapObj = JObject.Parse(unicodeMappingTextAsset.text);
+                if (!mapObj.TryGetValue("substitutions", out var sub))
+                {
+                    _substitutionData = null;
+                }
+                else
+                {
+                    _substitutionData = new UnicodeSubstitutionData(sub.Select(token =>
+                    {
+                        var obj = (JObject)token;
+                        var instance = new UnicodeSubstitutionEntry();
+                        if (!obj.TryGetValue("namespace", out var ns) || !obj.TryGetValue("mapping", out var mp))
+                        {
+                            throw new MalformedUnicodeMappingException();
+                        }
+
+                        instance.nameSpace = ns.ToString();
+                        instance.mapping = mp.ToObject<Dictionary<string, int>>();
+
+                        return instance;
+                    }).ToList());
+                }
             }
 
             var obj = JArray.Parse(categoryTextAsset.text);
@@ -259,18 +266,22 @@ namespace Clpsplug.I18n.Runtime
             // If there is a Unicode mapping available, try to substitute here to reduce strain.
             if (_substitutionData != null)
             {
+                var newLangData = new Dictionary<string, string>();
                 foreach (var kv in langData)
                 {
                     var re = new Regex(@"(?<!\{)\{([^{}]+?):([^{}]+?)\}");
                     // Extract namespace and value
-                    re.Replace(kv.Value, match =>
+                    newLangData[kv.Key] = re.Replace(kv.Value, match =>
                     {
                         var nameSpace = match.Groups[1].Value;
                         var subKey = match.Groups[2].Value;
-                        var substitution = _substitutionData.GetSubstitution(nameSpace, subKey);
-                        return substitution.HasValue ? char.ConvertFromUtf32(substitution.Value) : match.Value; // If no match is found, keep the original token
+                        var substitution = _substitutionData.GetSubstitution(nameSpace, subKey); 
+                        // If no match is found, keep the original token
+                        return substitution.HasValue ? char.ConvertFromUtf32(substitution.Value) : match.Value;
                     });
                 }
+
+                langData = newLangData;
             }
 
             return new LocalizedStringData
@@ -354,6 +365,27 @@ namespace Clpsplug.I18n.Runtime
             {
                 // If NOT ALL but SOME language data are present, it is ill-formed.
                 throw new MalformedStringResourceException($"Key {key} has not been fully translated!");
+            }
+            
+            // If there is a Unicode mapping available, try to substitute here to reduce strain.
+            if (_substitutionData != null)
+            {
+                var newLangData = new Dictionary<string, string>();
+                foreach (var kv in langData)
+                {
+                    var re = new Regex(@"(?<!\{)\{([^{}]+?):([^{}]+?)\}");
+                    // Extract namespace and value
+                    newLangData[kv.Key] = re.Replace(kv.Value, match =>
+                    {
+                        var nameSpace = match.Groups[1].Value;
+                        var subKey = match.Groups[2].Value;
+                        var substitution = _substitutionData.GetSubstitution(nameSpace, subKey); 
+                        // If no match is found, keep the original token
+                        return substitution.HasValue ? char.ConvertFromUtf32(substitution.Value) : match.Value;
+                    });
+                }
+
+                langData = newLangData;
             }
 
             /* Since this string data is 'flat', we can immediately add it to our dictionary. */

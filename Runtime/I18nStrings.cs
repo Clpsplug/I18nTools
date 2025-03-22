@@ -331,7 +331,7 @@ namespace Clpsplug.I18n.Runtime
             }
 
             path = config.StringSourcePath.Trim();
-            unicodeMappingPath = string.IsNullOrEmpty(config.UnicodeMappingDefinitionPath.Trim())
+            unicodeMappingPath = !string.IsNullOrEmpty(config.UnicodeMappingDefinitionPath.Trim())
                 ? config.UnicodeMappingDefinitionPath.Trim()
                 : null;
             var parser = new I18nStringParser(path, unicodeMappingPath);

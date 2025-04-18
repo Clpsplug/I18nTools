@@ -20,6 +20,7 @@ https://github.com/Clpsplug/I18nTools.git
 > 3. [Use the strings - the basic way](#toc3)
 > 4. [Use the strings - the **easy** way!](#toc4)
 > 5. [Change language](#toc5)
+> 6. [Named Substitution](#toc6)
 
 ### 1. Define the supported languages
 <a id="toc1"></a>
@@ -62,6 +63,9 @@ The i18n strings are provided through the following path by default:
 ```
 Assets/Resources/strings.json
 ```
+This path can be edited by creating "I18nStringConfig" file **in the Resources folder** via: 
+* Right click on the project pane, and
+* click ClpsPLUG/I18n/I18n string configuration.
 
 the strings are defined in the following JSON format:
 
@@ -106,7 +110,7 @@ the strings are defined in the following JSON format:
 ]
 ```
 
-### 3. Use the strings - the basic way
+### 3. Use the strings - the basic (verbose) way
 <a id="toc3"></a>
 
 There are two ways to use the string - from the code, or as a static label in the scene.
@@ -281,6 +285,69 @@ to the specified language.
 The second method, `I18nTool.NotifyLanguageSwitchToStaticLabels()`, triggers a refresh for 
 all the GameObjects with either the `I18nStaticLabel` component or the `I18nStaticLabelUGUI` component attached
 so that their text turns into the string of the specified language.
+
+
+### 6. Unicode Mapping Definition
+<a id="toc6"></a>
+**Unicode Mapping Definition** is a way to display characters that are otherwise difficult to type into the string resources.
+
+Suppose you want to display a gamepad button glyph. TextMeshPro has the "Sprite Font" feature
+where you can import arbitrary sprite and assign unicode values to have it draw the glyph.  
+However, those glyphs are probably best assigned to Unicode's 'Private Use Area' (such as U+E000~U+F8FF)
+and typing such 'characters' in would lead to a string resource like this:
+
+```json5
+[
+    {
+      "key": "press-a",
+      "ja": "\ue000 を押してください！", 
+      "en": "Press \ue000!"
+    },
+]
+```
+
+...this is hard to read. To help mitigate the mistakes, **Unicode Mapping Definition** can be used.
+
+#### Create the I18n string config
+If you haven't customised your string.json path, you must create "I18nStringConfig" file **in the Resources folder** via:
+* Right click on the project pane, and
+* click ClpsPLUG/I18n/I18n string configuration.
+
+#### Define Unicode Mapping
+You should find a field called "Unicode Mapping Definition Path". Point it to a JSON file that looks like this:
+```json5
+{
+  "substitutions": [
+    {
+      "namespace": "gp",
+      "mapping": {
+        "a-button": 57344 // 0xE000. TODO: Implement a feature that accepts string (such as \ue000)
+      }
+    }
+  ]
+}
+```
+
+> [!NOTE]
+> I know, converting hex to decimal is hard; I'm working on a feature that accepts string instead.
+
+#### Use the mapping
+With this JSON file loaded up, the aforementioned string resource can be written like so:
+```json5
+[
+    {
+      "key": "press-a",
+      "ja": "{gp:a-button}を押してください！",  // Note the {(namespace):(mapping name)} syntax.
+      "en": "Press {gp:a-button}!"
+    },
+]
+```
+
+When you reference `I18nString.For("press-a")`, the `{gp:a-button}` part will be substituted 
+with Unicode `57344 = 0xE000` on the fly, and if the sprite font assignment is done correctly, 
+the glyph should come right up!
+
+There is no limit to how many namespaces there can be in your game.
 
 # TODO
 
